@@ -26,11 +26,11 @@
                 </figure>
                 <div class="article-body">
                     <h2>{{ blog.title }}</h2>
-                    <p class="article-summary">{{ blog.summary }}</p>
-                    <p>Author: {{ blog.author_unique_id }}</p>
+                    <p class="article-summary" [innerHTML]="blog.sanitizedSummary"></p>
+                    <p>Email: {{ blog.author_email }}</p>
                     <a href="#" class="read-more" (click)="openModal(blog); $event.preventDefault()">
-                        Read more <span class="sr-only">about </span>
-                        <svg style="width: 20px;" xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 20 20" fill="currentColor">
+                        Read more <span class="sr-only"> about</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
                     </a>
@@ -41,11 +41,12 @@
 </div>
 
 <!-- Modal Structure -->
-<div class="modal" [class.show]="isModalOpen">
-    <div class="modal-content">
+<div class="modal" [class.show]="isModalOpen" (click)="closeModalOnOutsideClick($event)">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <!-- Prevent closing on content click -->
         <span class="close" (click)="closeModal()">&times;</span>
         <h2>{{ selectedBlog?.title }}</h2>
-        <p>{{ selectedBlog?.summary }}</p>
+        <div [innerHTML]="selectedBlog?.sanitizedSummary"></div>
         <button class="scroll-up-button" (click)="scrollToTop()">Scroll to Top</button>
     </div>
 </div>

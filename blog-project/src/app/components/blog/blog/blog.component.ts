@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { BlogService } from '../../../services/blog.service';
 import { AuthService } from '../../../services/auth.service';
 import { Router } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-blog',
@@ -18,7 +19,12 @@ export class BlogComponent implements OnInit {
   newComment: string = '';
   comments: any[] = []; // Initialize the comments array
 
-  constructor(private blogService: BlogService, private authService: AuthService, private router: Router) {}
+  constructor(
+    private blogService: BlogService,
+    private authService: AuthService,
+    private router: Router,
+    private sanitizer: DomSanitizer
+  ) {}
 
   ngOnInit(): void {
     this.fetchArticles();
@@ -28,8 +34,12 @@ export class BlogComponent implements OnInit {
     this.blogService.getBlogs().subscribe(
       (response: any) => {
         if (response && response.articles) {
-          this.blogs = response.articles;
+          this.blogs = response.articles.map((article: any) => ({
+            ...article,
+            sanitizedSummary: this.sanitizer.bypassSecurityTrustHtml(article.summary)
+          }));
           this.filteredBlogs = this.blogs;
+          this.fetchEmailsForArticles();
         } else {
           console.error('Invalid response format:', response);
         }
@@ -38,6 +48,23 @@ export class BlogComponent implements OnInit {
         console.error('Failed to fetch blogs:', error);
       }
     );
+  }
+
+  fetchEmailsForArticles(): void {
+    this.blogs.forEach((blog, index) => {
+      this.blogService.getUserDetails(blog.author_unique_id).subscribe(
+        (response: any) => {
+          if (response && response.user && response.user.email) {
+            this.blogs[index].author_email = response.user.email;
+          } else {
+            console.error('Invalid response structure:', response);
+          }
+        },
+        (error: any) => {
+          console.error('Failed to fetch user details:', error);
+        }
+      );
+    });
   }
 
   filterBlogs(): void {
@@ -57,11 +84,11 @@ export class BlogComponent implements OnInit {
 
   openModal(blog: any) {
     this.selectedBlog = blog;
-    this.isModalOpen = true;
+    this.isModalOpen = true; // Ensure this is set to true
   }
 
   closeModal() {
-    this.isModalOpen = false;
+    this.isModalOpen = false; // Ensure this is set to false
     this.selectedBlog = null;
   }
 

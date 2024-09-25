@@ -32,10 +32,8 @@ if ($result === false) {
 }
 
 $articles = [];
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $articles[] = $row;
-    }
+while ($row = $result->fetch_assoc()) {
+    $articles[] = $row;
 }
 
 echo json_encode(["articles" => $articles]);

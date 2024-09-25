@@ -6,11 +6,15 @@ import { Observable } from 'rxjs';
   providedIn: 'root'
 })
 export class BlogService {
-  private apiUrl = 'http://localhost/api-blog/articles'; // Update this URL if needed
+  private apiUrl = 'http://localhost/api-blog';
 
   constructor(private http: HttpClient) {}
 
   getBlogs(): Observable<any> {
-    return this.http.get<any>(this.apiUrl);
+    return this.http.get(`${this.apiUrl}/articles`);
+  }
+
+  getUserDetails(uniqueId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/user_details`, { unique_id: uniqueId });
   }
 }

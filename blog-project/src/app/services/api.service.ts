@@ -22,6 +22,7 @@ export class ApiService {
   private likeArticleUrl = `${this.apiUrl}/like_article`; // Add the URL for liking articles
   private dislikeArticleUrl = `${this.apiUrl}/dislike_article`; // Add the URL for disliking articles
   private addCommentUrl = `${this.apiUrl}/add_comment`; // Add the URL for adding comments
+  private getArticleByIdUrl = `${this.apiUrl}/get_article_by_id`; // Add the URL for fetching article by ID
 
   constructor(private http: HttpClient, private authService: AuthService) {}
 
@@ -61,6 +62,10 @@ export class ApiService {
     );
   }
 
+  getArticleByTitle(title: string): Observable<any> {
+    return this.http.get<any>(`${this.apiUrl}/get_article_by_id?id=${title}`);
+  }
+
   getArticlesByAuthor(uniqueId: string): Observable<any> {
     return this.http.post<any>(this.getArticlesByAuthorUrl, { unique_id: uniqueId }).pipe(
       catchError(this.handleError)
@@ -73,8 +78,8 @@ export class ApiService {
     );
   }
 
-  uploadImage(data: FormData): Observable<any> {
-    return this.http.post<any>(this.uploadImageUrl, data).pipe(
+  uploadImage(formData: FormData): Observable<any> {
+    return this.http.post<any>(this.uploadImageUrl, formData).pipe(
       catchError(this.handleError)
     );
   }
@@ -85,14 +90,15 @@ export class ApiService {
     );
   }
 
-  editArticle(data: any): Observable<any> {
-    const formData: FormData = new FormData();
-    formData.append('article_id', data.article_id);
-    formData.append('title', data.title);
-    formData.append('summary', data.summary);
-    formData.append('profile_image_url', data.profile_image_url);
+  editArticle(articleData: any): Observable<any> {
+    return this.http.post<any>(`${this.apiUrl}/edit_article`, articleData).pipe(
+      catchError(this.handleError)
+    );
+  }
 
-    return this.http.post<any>(this.editArticleUrl, formData).pipe(
+  updateArticle(articleId: number, articleData: any): Observable<any> {
+    return this.http.put<any>(`${this.apiUrl}/articles/${articleId}`, articleData).pipe(
+      tap(response => console.log('Article updated:', response)),
       catchError(this.handleError)
     );
   }
@@ -122,6 +128,10 @@ export class ApiService {
     );
   }
 
+  getArticleById(articleId: string): Observable<any> {
+    return this.http.get(`http://localhost/api-blog/id=${articleId}`);
+  }
+
   getImage(filename: string): string {
     return `${this.apiUrl}/uploads/${filename}`;
   }
@@ -129,19 +139,20 @@ export class ApiService {
   private handleError(error: HttpErrorResponse) {
     let errorMessage = 'An unknown error occurred!';
     if (error.error instanceof ErrorEvent) {
-      // A client-side or network error occurred.
       errorMessage = `An error occurred: ${error.error.message}`;
     } else {
-      // The backend returned an unsuccessful response code.
-      if (error.status === 401) {
-        errorMessage = error.error.error; // Use the error message from the backend
-      } else {
-        errorMessage = `Server returned code: ${error.status}, error message is: ${error.message}`;
-        if (error.error) {
-          errorMessage += `, server error message: ${error.error}`;
-        }
+      errorMessage = `Server returned code: ${error.status}, error message is: ${error.message}`;
+      if (error.error) {
+        errorMessage += `, server error message: ${error.error}`;
       }
     }
     return throwError(errorMessage);
+  }
+  getAuthorUniqueId(): string {
+    const uniqueId = this.authService.getUniqueId();
+    if (!uniqueId) {
+      throw new Error('Unique ID is null');
+    }
+    return uniqueId;
   }
 }

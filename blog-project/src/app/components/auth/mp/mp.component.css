@@ -95,12 +95,14 @@ p {
     width: 20px;
 }
 
-.articles[_ngcontent-ng-c2781662199] {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 10px;
-    /* padding-bottom: initial; */
+.articles {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    /* Align items from left to right */
+    gap: 20px;
     margin-bottom: 20%;
+    margin-left: 95px;
 }
 
 .article-wrapper {
@@ -175,7 +177,7 @@ figure img {
 }
 
 button {
-    padding: 10px 20px;
+    padding: 6px 10px;
     border: none;
     border-radius: 5px;
     background-color: #28666e;

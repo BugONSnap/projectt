@@ -33,7 +33,7 @@ export class LoginComponent implements OnInit {
   onSubmit() {
     if (this.loginForm.valid) {
       const loginData = this.loginForm.value;
-      console.log('Sending login data:', loginData);
+      
       this.apiService.login(loginData).subscribe(
         (response: any) => {
           console.log('Login successful', response.message);

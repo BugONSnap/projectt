@@ -1,8 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { ApiService } from '../../../services/api.service';
 import { Router } from '@angular/router';
+import { ApiService } from '../../../services/api.service';
 import { AuthService } from '../../../services/auth.service';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 
 @Component({
   selector: 'app-mp',
@@ -19,8 +20,8 @@ export class MpComponent implements OnInit {
   selectedArticle: any = null;
   editMode: boolean = false;
   editArticleId: number | null = null;
-  originalImageUrl: string | null = null; // Store the original image URL
-  uploadedImageId: number | null = null; // Store the uploaded image ID
+  originalImageUrl: string | null = null;
+  uploadedImageId: number | null = null;
   selectedFile: File | null = null;
   isCreateArticleModalOpen = false;
 
@@ -28,14 +29,14 @@ export class MpComponent implements OnInit {
     private fb: FormBuilder,
     private apiService: ApiService,
     private router: Router,
-    public authService: AuthService // Use 'public' modifier here
+    public authService: AuthService,
+    private sanitizer: DomSanitizer
   ) {}
 
   ngOnInit(): void {
     const uniqueId = this.authService.getUniqueId();
     if (!uniqueId) {
       console.error('Unique ID is null');
-      // Handle the case where uniqueId is null, e.g., redirect to login
       this.router.navigate(['/login']);
       return;
     }
@@ -57,33 +58,27 @@ export class MpComponent implements OnInit {
       if (this.editMode && this.editArticleId !== null) {
         articleData.article_id = this.editArticleId;
         if (!articleData.profile_image_url) {
-          articleData.profile_image_url = this.originalImageUrl; // Use the original image URL if not changed
+          articleData.profile_image_url = this.originalImageUrl;
         }
         if (this.uploadedImageId) {
-          articleData.image_id = this.uploadedImageId; // Include the image ID if available
+          articleData.image_id = this.uploadedImageId;
         }
-        console.log('Submitting article data for update:', articleData); // Log the form data
         this.apiService.editArticle(articleData).subscribe(
           response => {
-            console.log('Article updated successfully:', response.message);
-            this.fetchArticles(this.authService.getUniqueId()!);
+            this.fetchArticles(this.authService.getUniqueId()!); // Refresh articles after edit
             this.resetForm();
           },
           error => {
-            console.error('Article update failed:', error);
             alert('Article update failed: ' + (error.error?.error || error.message));
           }
         );
       } else {
-        console.log('Submitting article data for creation:', articleData); // Log the form data
         this.apiService.createArticle(articleData).subscribe(
           response => {
-            console.log('Article created successfully:', response.message);
-            this.createdArticles.push(articleData);
+            this.fetchArticles(this.authService.getUniqueId()!); // Refresh articles after creation
             this.resetForm();
           },
           error => {
-            console.error('Article creation failed:', error);
             alert('Article creation failed: ' + (error.error?.error || error.message));
           }
         );
@@ -99,12 +94,10 @@ export class MpComponent implements OnInit {
 
       this.apiService.uploadImage(formData).subscribe(
         (response: any) => {
-          console.log('Image uploaded successfully:', response);
-          this.uploadedImageId = response.image_id; // Store the uploaded image ID
-          this.createArticleForm.patchValue({ profile_image_url: response.url }); // Use the URL from the response
+          this.uploadedImageId = response.image_id;
+          this.createArticleForm.patchValue({ profile_image_url: response.url });
         },
         (error) => {
-          console.error('Image upload failed:', error);
           alert('Image upload failed: ' + (error.error?.error || error.message));
         }
       );
@@ -150,7 +143,10 @@ export class MpComponent implements OnInit {
   }
 
   openModal(article: any) {
-    this.selectedArticle = article;
+    this.selectedArticle = {
+      ...article,
+      sanitizedSummary: this.sanitizer.bypassSecurityTrustHtml(article.summary)
+    };
     this.isModalOpen = true;
   }
 
@@ -167,11 +163,9 @@ export class MpComponent implements OnInit {
     }
     this.apiService.deleteArticle(articleId, uniqueId).subscribe(
       response => {
-        console.log('Article deleted successfully:', response.message);
         this.fetchArticles(uniqueId);
       },
       error => {
-        console.error('Article deletion failed:', error);
         alert('Article deletion failed: ' + (error.error?.error || error.message));
       }
     );
@@ -180,8 +174,8 @@ export class MpComponent implements OnInit {
   editArticle(article: any) {
     this.editMode = true;
     this.editArticleId = article.id;
-    this.originalImageUrl = article.profile_image_url; // Store the original image URL
-    this.uploadedImageId = article.image_id; // Store the uploaded image ID
+    this.originalImageUrl = article.profile_image_url;
+    this.uploadedImageId = article.image_id;
     this.createArticleForm.patchValue({
       title: article.title,
       summary: article.summary,
@@ -201,30 +195,8 @@ export class MpComponent implements OnInit {
     this.createArticleForm.patchValue({ author_unique_id: uniqueId });
     this.editMode = false;
     this.editArticleId = null;
-    this.originalImageUrl = null; // Reset the original image URL
-    this.uploadedImageId = null; // Reset the uploaded image ID
-  }
-
-  updateArticle() {
-    const data = {
-      article_id: this.editArticleId,
-      title: this.createArticleForm.value.title,
-      summary: this.createArticleForm.value.summary,
-      profile_image_url: this.createArticleForm.value.profile_image_url,
-      author_unique_id: this.createArticleForm.value.author_unique_id,
-      image_id: this.uploadedImageId
-    };
-
-    console.log('Updating article with data:', data); // Log the data
-
-    this.apiService.editArticle(data).subscribe(
-      (response: any) => {
-        console.log('Article updated successfully:', response);
-      },
-      (error: any) => {
-        console.error('Article update failed:', error);
-      }
-    );
+    this.originalImageUrl = null;
+    this.uploadedImageId = null;
   }
 
   navigateToBlogForms() {
@@ -238,4 +210,5 @@ export class MpComponent implements OnInit {
   closeCreateArticleModal() {
     this.isCreateArticleModalOpen = false;
   }
+
 }

@@ -28,12 +28,14 @@ export class RegisterComponent implements OnInit {
   onSubmit() {
     if (this.registerForm.valid) {
       const registerData = this.registerForm.value;
-      console.log('Sending registration data:', registerData);
+      // Remove or comment out the console.log statement
+      // console.log('Sending registration data:', registerData);
       this.apiService.register(registerData)
         .subscribe(
           response => {
-            console.log('Registration successful:', response.message);
-            console.log('Unique ID:', response.unique_id); // Log the unique ID
+            // Remove or comment out the console.log statements
+            // console.log('Registration successful:', response.message);
+            // console.log('Unique ID:', response.unique_id); // Log the unique ID
             this.router.navigate(['/login']);
           },
           error => {

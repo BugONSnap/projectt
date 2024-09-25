@@ -14,88 +14,58 @@ $username = "root";
 $password = "";
 $dbname = "bolgdb";
 
-$conn = new mysqli($servername, $username, $password, $dbname);
+try {
+    $conn = new mysqli($servername, $username, $password, $dbname);
 
-if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(["error" => "Database connection failed"]);
-    exit();
-}
+    if ($conn->connect_error) {
+        throw new Exception("Database connection failed: " . $conn->connect_error);
+    }
 
-$data = $_POST;
-$file = $_FILES['profile_image_url'] ?? null;
+    $data = json_decode(file_get_contents("php://input"), true);
 
-// Log the received data
-error_log(print_r($data, true));
-error_log(print_r($file, true));
+    // Log the received data
+    error_log("Received data: " . print_r($data, true));
 
-if (isset($data['article_id'])) {
-    $article_id = $conn->real_escape_string($data['article_id']);
-    $title = isset($data['title']) ? $conn->real_escape_string($data['title']) : null;
-    $summary = isset($data['summary']) ? $conn->real_escape_string($data['summary']) : null;
-    $profile_image_url = isset($data['profile_image_url']) ? $conn->real_escape_string($data['profile_image_url']) : null;
+    if (isset($data['id'])) {
+        $article_id = $conn->real_escape_string($data['id']);
+        $title = isset($data['title']) ? $conn->real_escape_string($data['title']) : null;
+        $summary = isset($data['summary']) ? $conn->real_escape_string($data['summary']) : null;
+        $profile_image_url = isset($data['profile_image_url']) ? $conn->real_escape_string($data['profile_image_url']) : null;
+        $author_unique_id = isset($data['author_unique_id']) ? $conn->real_escape_string($data['author_unique_id']) : null;
+        $image_id = isset($data['image_id']) ? $conn->real_escape_string($data['image_id']) : null;
 
-    // Handle file upload
-    if ($file && $file['error'] === UPLOAD_ERR_OK) {
-        $uploadDir = 'uploads/';
-        $uploadFile = $uploadDir . basename($file['name']);
-        if (move_uploaded_file($file['tmp_name'], $uploadFile)) {
-            $profile_image_url = $uploadFile;
+        // Log the processed data
+        error_log("Processed data: article_id=$article_id, title=$title, summary=$summary, profile_image_url=$profile_image_url, author_unique_id=$author_unique_id, image_id=$image_id");
+
+        if ($title && $summary && $profile_image_url && $author_unique_id) {
+            $stmt = $conn->prepare("UPDATE articles SET title = ?, summary = ?, profile_image_url = ?, author_unique_id = ?, image_id = ? WHERE id = ?");
+            if (!$stmt) {
+                throw new Exception("Prepare statement failed: " . $conn->error);
+            }
+            $stmt->bind_param("sssssi", $title, $summary, $profile_image_url, $author_unique_id, $image_id, $article_id);
+            $stmt->execute();
+
+            if ($stmt->affected_rows > 0) {
+                echo json_encode(["message" => "Article updated successfully"]);
+            } else {
+                http_response_code(400);
+                echo json_encode(["error" => "Failed to update article"]);
+            }
+
+            $stmt->close();
         } else {
-            http_response_code(500);
-            echo json_encode(["error" => "Failed to upload image"]);
-            exit();
+            http_response_code(400);
+            echo json_encode(["error" => "Invalid input"]);
         }
-    }
-
-    // Prepare the SQL statement with placeholders
-    $sql = "UPDATE articles SET ";
-    $params = [];
-    $types = "";
-
-    if ($title !== null) {
-        $sql .= "title = ?, ";
-        $params[] = $title;
-        $types .= "s";
-    }
-    if ($summary !== null) {
-        $sql .= "summary = ?, ";
-        $params[] = $summary;
-        $types .= "s";
-    }
-    if ($profile_image_url !== null) {
-        $sql .= "profile_image_url = ?, ";
-        $params[] = $profile_image_url;
-        $types .= "s";
-    }
-
-    $sql = rtrim($sql, ", ") . " WHERE id = ?";
-    $params[] = $article_id;
-    $types .= "i";
-
-    // Log the SQL query and parameters
-    error_log("SQL Query: " . $sql);
-    error_log("Parameters: " . print_r($params, true));
-
-    // Initialize the statement
-    $stmt = $conn->prepare($sql);
-
-    // Bind the parameters to the statement
-    $stmt->bind_param($types, ...$params);
-
-    // Execute the statement
-    if ($stmt->execute()) {
-        echo json_encode(["message" => "Article updated successfully"]);
     } else {
-        error_log("SQL Error: " . $stmt->error);
-        echo json_encode(["error" => "Failed to update article"]);
+        http_response_code(400);
+        echo json_encode(["error" => "Invalid article ID"]);
     }
 
-    // Close the statement and connection
-    $stmt->close();
     $conn->close();
-} else {
-    http_response_code(400);
-    echo json_encode(["error" => "Invalid input"]);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode(["error" => $e->getMessage()]);
+    error_log("Error: " . $e->getMessage());
 }
 ?>

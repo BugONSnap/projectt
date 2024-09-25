@@ -4,7 +4,6 @@ import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { HttpClientModule } from '@angular/common/http';
 import { AppComponent } from './app.component';
-import { BlogFormComponent } from './components/blog/blog-form/blog-form.component';
 import { BlogComponent } from './components/blog/blog/blog.component';
 import { CommentsComponent } from './components/comments/comments.component';
 import { AuthComponent } from './components/auth/auth.component';
@@ -14,30 +13,39 @@ import { MpComponent } from './components/auth/mp/mp.component';
 import { AppRoutingModule } from './app-routing.module';
 import { HeaderComponent } from './components/header/header.component';
 import { ArticlesComponent } from './components/articles/articles.component';
+import { EditArticleComponent } from './components/edit-article/edit-article.component';
+import { CreateArticleComponent } from './components/create-article/create-article.component';
+import { AuthService } from './services/auth.service';
+import { QuillModule } from 'ngx-quill';
 
 @NgModule({
   declarations: [
     AppComponent,
+    HeaderComponent,
+    BlogComponent,
     CommentsComponent,
     AuthComponent,
     LoginComponent,
     RegisterComponent,
-    BlogFormComponent,
     BlogComponent,
     MpComponent,
     HeaderComponent,
-    ArticlesComponent
+    ArticlesComponent,
+    EditArticleComponent,
+    CreateArticleComponent,
   ],
+
   imports: [
     BrowserModule,
     BrowserAnimationsModule,
     FormsModule,
     ReactiveFormsModule,
     HttpClientModule,
-    AppRoutingModule
+    AppRoutingModule,
+    QuillModule.forRoot()
   ],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
-  providers: [],
+  providers: [AuthService],
   bootstrap: [AppComponent]
 })
 export class AppModule { }
